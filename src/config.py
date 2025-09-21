@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 @dataclass
 class Settings:
     # API Keys
+    google_api_key: str
     openrouter_api_key: str
     newsapi_key: str
     
@@ -41,17 +42,18 @@ def load_settings() -> Settings:
 
     return Settings(
         # API Keys
+        google_api_key=os.getenv("GOOGLE_API_KEY", ""),
         openrouter_api_key=os.getenv("OPENROUTER_API_KEY", ""),
         newsapi_key=os.getenv("NEWSAPI_KEY", ""),
         
         # Vector Store
         index_dir=os.getenv("INDEX_DIR", ".faiss_index"),
         
-        # News Sources (credible financial/business sources)
+        # News Sources (optimized for Korean business news)
         news_sources=_get_list("NEWS_SOURCES", 
-            "bloomberg,reuters,financial-times,wall-street-journal,cnbc,marketwatch,bbc-news,associated-press,forbes,business-insider,yahoo-finance"),
+            "reuters,bloomberg,financial-times,cnbc,bbc-news,associated-press,forbes,business-insider"),
         news_domains=_get_list("NEWS_DOMAINS",
-            "bloomberg.com,reuters.com,ft.com,wsj.com,cnbc.com,marketwatch.com,bbc.com,ap.org,forbes.com,businessinsider.com,finance.yahoo.com"),
+            "reuters.com,bloomberg.com,ft.com,cnbc.com,bbc.com,ap.org,forbes.com,businessinsider.com"),
         
         # Company Analysis
         default_markets=_get_list("DEFAULT_MARKETS", 
@@ -71,6 +73,8 @@ def load_settings() -> Settings:
 
 def validate_settings(cfg: Settings) -> None:
     missing = []
+    if not cfg.google_api_key:
+        missing.append("GOOGLE_API_KEY")
     if not cfg.openrouter_api_key:
         missing.append("OPENROUTER_API_KEY")
     if not cfg.newsapi_key:

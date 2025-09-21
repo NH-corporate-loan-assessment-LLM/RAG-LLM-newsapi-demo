@@ -10,18 +10,30 @@
 
 ## 솔루션 아키텍처
 
+###프로토타입 단계에서는 빠른 검증과 가벼운 실험 환경을 목표로 하였으며, 이를 위해 다음과 같은 전략을 채택하였습니다:
+
+Perplexity 기반 청킹 (향후 통합 예정)
+복잡도가 높은 모델은 초기 단계에서 제외하고, 향후 확장을 위해 구현을 병행 중입니다.
+
+뉴스 수집 – NewsAPI 활용
+고비용 및 라이선스 제약이 있는 Bloomberg/Reuters 대신, 접근성과 경량성이 뛰어난 NewsAPI를 사용하여 빠른 프로토타이핑을 구현했습니다.
+
+하이브리드 AI 시스템 – Gemini + OpenRouter
+안정성과 비용 효율성을 동시에 확보하기 위해 하이브리드 접근 방식을 채택했습니다:
+- **임베딩**: Google Gemini API (안정적이고 빠른 벡터 임베딩)
+- **LLM 분석**: OpenRouter API의 GPT-4o mini (비용 효율적인 텍스트 분석)
+
 ### 핵심 구성요소
 
 1. **뉴스 수집 모듈**
    - NewsAPI와 연동하여 신뢰할 수 있는 비즈니스 뉴스 수집
-   - 다수의 고신뢰도 소스 지원 (로이터, 블룸버그, 월스트리트저널 등)
    - 기업 프로필과 수출 시장을 기반으로 한 지능형 검색 쿼리 구현
 
-2. **RAG 파이프라인**
-   - 최적의 정보 처리를 위한 텍스트 청킹
-   - OpenRouter의 text-embedding-3-large 모델을 활용한 벡터 임베딩
+2. **하이브리드 RAG 파이프라인**
+   - 키워드 기반 News API로 뉴스 수집
+   - Gemini API의 text-embedding-004 모델을 활용한 벡터 임베딩
    - 효율적인 유사도 검색을 위한 FAISS 기반 벡터 스토어
-   - 관련 뉴스 기사의 맥락 인식 검색
+   - Similarity score 계산으로 최적의 기사 1개 자동 선택
 
 3. **LLM 분석 엔진**
    - 비용 효율적인 분석을 위해 OpenRouter를 통한 GPT-4o-mini 활용
@@ -38,10 +50,11 @@
 **기술 스택:**
 - Python 3.12
 - 웹 인터페이스를 위한 Streamlit
-- LLM 및 임베딩을 위한 OpenAI API (OpenRouter 경유)
+- 벡터 임베딩을 위한 Google Gemini API
+- LLM 분석을 위한 OpenRouter API (GPT-4o mini)
 - 뉴스 수집을 위한 NewsAPI
 - 벡터 유사도 검색을 위한 FAISS
-- 웹 스크래핑 기능을 위한 BeautifulSoup
+- 하이브리드 RAG 파이프라인
 
 **주요 기능:**
 - 실시간 뉴스 분석
@@ -85,38 +98,12 @@
 9. 시장점유율 영향 (0-1)
 10. 혁신 기회 (0-1)
 
-### 통합 기능
-- 시스템 통합을 위한 RESTful API 엔드포인트
-- 표준화된 JSON 출력 형식
-- 실시간 처리 기능
-- 배치 처리 지원
-- 구성 가능한 분석 매개변수
-
-## 기술 사양
-
-### 성능 지표
-- 처리 시간: 기업당 30초 미만
-- 뉴스 커버리지: 50개 이상의 신뢰할 수 있는 소스
-- 분석 정확도: 맥락 인식 LLM 해석
-- 확장성: 벡터 기반 유사도 검색
-
-### 데이터 소스
-- 프리미엄 소스와의 NewsAPI 통합
-- 실시간 뉴스 업데이트
-- 과거 데이터 접근 (API 제한 내)
-- 다국어 지원 기능
-
-### 보안 및 규정 준수
-- 환경 변수를 통한 API 키 관리
-- 민감한 데이터 저장 없음
-- GDPR 준수 데이터 처리
-- 안전한 벡터 스토리지 구현
-
 ## 설치 및 설정
 
 ### 사전 요구사항
 - Python 3.12 이상
 - NewsAPI 계정 및 API 키
+- Google AI Studio API 키 (Gemini)
 - OpenRouter 계정 및 API 키
 
 ### 설치 단계
@@ -135,11 +122,17 @@ pip install -r requirements.txt
 3. 환경 변수 설정:
 ```bash
 # .env 파일 생성
+GOOGLE_API_KEY=your_google_api_key
 OPENROUTER_API_KEY=your_openrouter_api_key
 NEWSAPI_KEY=your_newsapi_key
 ```
 
-4. 애플리케이션 실행:
+4. API 키 획득:
+   - **Google AI Studio**: https://makersuite.google.com/app/apikey
+   - **OpenRouter**: https://openrouter.ai/keys
+   - **NewsAPI**: https://newsapi.org/register
+
+5. 애플리케이션 실행:
 ```bash
 streamlit run streamlit_app.py
 ```
@@ -153,36 +146,18 @@ streamlit run streamlit_app.py
    - 업종/섹터
    - 주요 제품/서비스
    - 수출 시장/지역
-3. 분석 매개변수 구성:
-   - 뉴스 검색 기간
-   - 분석 깊이 설정
+3. 하이브리드 시스템 작동:
+   - NewsAPI로 키워드 기반 뉴스 수집
+   - Gemini API로 벡터 임베딩 생성
+   - Similarity score로 최적 기사 1개 자동 선택
+   - OpenRouter LLM으로 영향도 분석
 4. 결과 검토:
+   - 선택된 최적 기사와 점수
    - 대출 모델 통합을 위한 ML 특성
    - 영향 분석이 포함된 소스 기사
-   - 대출 권고사항 요약
 
 ### API 통합
 제공된 Python 모듈을 통해 기존 대출심사 워크플로우에 시스템을 통합할 수 있습니다:
-
-```python
-from src.rag.pipeline import CorporateRagPipeline
-from src.company.profile import CompanyProfile
-
-# 시스템 초기화
-pipeline = CorporateRagPipeline(api_key, index_dir, settings)
-
-# 기업 프로필 생성
-company = CompanyProfile(
-    name="기업명",
-    industry="반도체",
-    products_services=["메모리 칩", "프로세서"],
-    target_markets=["미국", "중국"]
-)
-
-# 분석 및 ML 특성 획득
-result = pipeline.analyze_company_impact(company)
-ml_features = result["ml_features"]
-```
 
 ## 비즈니스 임팩트
 
@@ -212,20 +187,6 @@ ml_features = result["ml_features"]
 - 향상된 벡터 스토리지 최적화
 - API 속도 제한 및 캐싱
 - 다중 기업 배치 처리
-
-## 기술 문서
-
-### 아키텍처 다이어그램
-- 시스템 구성요소 상호작용 플로우
-- 데이터 처리 파이프라인
-- API 통합 패턴
-- 벡터 스토리지 스키마
-
-### 코드 문서
-- 포괄적인 인라인 문서
-- API 참조 가이드
-- 구성 옵션
-- 문제 해결 가이드
 
 ## 결론
 

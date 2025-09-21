@@ -63,9 +63,9 @@ class NewsApiIngestor:
     ) -> List[NewsArticle]:
         """Fetch articles based on query"""
         
-        # Calculate date range (limit to 3 days for free plan)
+        # Calculate date range (limit to 7 days for better coverage)
         to_date = datetime.now()
-        from_date = to_date - timedelta(days=min(days_back, 3))
+        from_date = to_date - timedelta(days=min(days_back, 7))
         
         articles = []
         page = 1
